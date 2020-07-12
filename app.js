@@ -12,6 +12,7 @@ app.use(bodyParser.json());
 app.use("/api/place", placeRouter);
 app.use("/api/user", userRouter);
 
+// Error handler in case request came from invalid route
 app.use((req,res,next) => {
 	const error = new HttpError(404, "Could not find this api");
 	throw error;

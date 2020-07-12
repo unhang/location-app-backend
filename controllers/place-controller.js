@@ -1,6 +1,6 @@
 const HttpError = require("../models/http-error");
-const { v4: uuid} = require("uuid");
-const {validationResult} = require("express-validator");
+const { v4: uuid } = require("uuid");
+const { validationResult } = require("express-validator");
 
 const DUMMY_PLACES = [
   {
@@ -45,7 +45,7 @@ const getPlaceByUserId = (req, res, next) => {
   const userId = req.params.uid;
   const places = DUMMY_PLACES.filter((place) => place.creator === userId);
 
-  if (!places || places.length === 0 ) {
+  if (!places || places.length === 0) {
     return next(404, "Could not find a place witt user id !");
   }
   res.json({ places });
@@ -77,9 +77,8 @@ const updatePlace = (req, res, next) => {
   const updatePlace = { ...DUMMY_PLACES.find((p) => p.id === placeId) };
   const placeIndex = DUMMY_PLACES.findIndex((p) => p.id === placeId);
 
-  console.log(placeIndex, updatePlace);
   if (placeIndex < 0) {
-    return next(new HttpError(404, "Could not find this api"));
+    return next(new HttpError(404, "Could not find place with id"));
   }
   updatePlace.title = title;
   updatePlace.description = description;
@@ -91,9 +90,12 @@ const updatePlace = (req, res, next) => {
 
 const deletePlace = (req, res, next) => {
   const placeId = req.params.pid;
-  DUMMY_PLACES.filter(p => p.id !== placeId);
 
-  res.status(200).json({message: "Deleted!"});
+  if (!DUMMY_PLACES.filter((p) => p.id !== placeId)) {
+    throw new HttpError(400, "Could not find place with id");
+  }
+
+  res.status(200).json({ message: "Deleted!" });
 };
 
 exports.getPlaceById = getPlaceById;
