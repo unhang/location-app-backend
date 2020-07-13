@@ -1,5 +1,7 @@
 const HttpError = require("../models/http-error");
 const { v4: uuid} = require("uuid");
+const {validationResult} = require("express-validator");
+
 
 
 const USERS = [
@@ -20,6 +22,11 @@ const getUsers = (req, res, next) => {
 
 const signup = (req, res, next) => {
   const {name, email, password} = req.body;
+  const validation = validationResult(req);
+  console.log(validation);
+  if (validation.errors.length > 0) {
+    throw new HttpError(422, "Could note create user due to invalid data input");
+  }
   const hasUser = USERS.find(u => u.email === email)
 
   if (hasUser) {
