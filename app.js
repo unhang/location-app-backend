@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+require("dotenv").config();
 
 const placeRouter = require("./routes/place-routes");
 const userRouter = require("./routes/user-routes");
@@ -27,8 +28,7 @@ app.use((error, req, res, next) => {
   res.json({ message: error.message || "An unknown error occurred!" });
 });
 
-const dbUri =
-  `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@hangung.iioeg.mongodb.net/${process.env.MONGO_DATABASE}?retryWrites=true&w=majority`;
+const dbUri = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@hangung.iioeg.mongodb.net/${process.env.MONGO_DATABASE}?retryWrites=true&w=majority`;
 mongoose
   .connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {

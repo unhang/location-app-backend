@@ -4,74 +4,75 @@ const { validationResult } = require("express-validator");
 
 const User = require("../models/user");
 
-const USERS = [
-  {
-    id: "u1",
-    name: "Hang Ung",
-    image:
-      "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/user-male-icon.png",
-    places: 3,
-    email: "hang@gmail.com",
-    password: "12345678",
-  },
-];
-
-const getUsers = (req, res, next) => {
-  res.json({ user: USERS });
+const getUsers = async (req, res, next) => {
+  let users;
+  try {
+    users = await User.find({}, '-password');
+  } catch (error) {
+    return next(
+      new HttpError(500, "Fetching users failed, please try again")
+    );
+  }
+  res.json({ users: users.map((user) => user.toObject({ getters: true })) });
 };
 
 const signup = async (req, res, next) => {
   const { name, email, password } = req.body;
   const validation = validationResult(req);
-
   if (validation.errors.length > 0) {
-    throw new HttpError(
-      422,
-      "Could note create user due to invalid data input"
+    return next(
+      new HttpError(422, "Could note create user due to invalid data input")
     );
   }
 
+  // validate if user exists already
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ email });
+  } catch (error) {
+    return next(new HttpError(500, "Signing up failed, please try again"));
+  }
+  if (existingUser) {
+    console.log(existingUser);
+    return next(
+      new HttpError(422, "User email exists already, please login instead")
+    );
+  }
 
+  // create new user
   const newUser = new User({
     name,
     email,
     password,
     image:
       "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/user-male-icon.png",
+    places:[],
   });
 
   try {
     await newUser.save();
-  } catch(error) {
-    return next(new HttpError(500, "Can not create user, please try again"))
+  } catch (error) {
+    return next(new HttpError(500, "Can not create user, please try again"));
   }
 
-  if (hasUser) {
-    return next(
-      new HttpError(422, "Could not create user, email already exist")
-    );
-  }
-
-  const createdUser = {
-    id: uuid(),
-    name,
-    email,
-    password,
-    image:
-      "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/user-male-icon.png",
-    places: 3,
-  };
-  USERS.push(createdUser);
-  res.status(201).json(createdUser);
+  res.status(201).json({ newUser: newUser.toObject({ getters: true }) });
 };
 
-const login = (req, res, next) => {
+const login = async (req, res, next) => {
   const { email, password } = req.body;
-  const identifiedUser = USERS.find((u) => u.email === email);
-  if (!identifiedUser || identifiedUser.password !== password) {
-    return next(new HttpError(401, "could not identify user"));
+
+  let user;
+  try {
+    user = await User.findOne({ email });
+  } catch (error) {
+    return next(new HttpError(500, "Something wrong, please try again"));
   }
 
+  if (!user || user.password !== password) {
+    return next(
+      new HttpError(404, "Invalid credentials, please try again")
+    );
+  }
   res.status(200).json({ message: "Login" });
 };
 

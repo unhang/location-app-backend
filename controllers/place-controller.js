@@ -1,37 +1,9 @@
 const HttpError = require("../models/http-error");
-const { v4: uuid } = require("uuid");
 const { validationResult } = require("express-validator");
+const mongoose = require("mongoose");
 
 const Place = require("../models/place");
-
-const DUMMY_PLACES = [
-  {
-    id: "p1",
-    title: "Landmark 81",
-    description: "The most famous sky scraper in Vietnam",
-    imageUrl:
-      "https://kinhdoanhdiaoc.net/wp-content/uploads/2017/06/landmark-81-1.jpg",
-    address: "20 W 34th St, New York, NY 1001",
-    location: {
-      lat: 10.7941662,
-      lng: 106.7186276,
-    },
-    creator: "u1",
-  },
-  {
-    id: "p2",
-    title: "Landmark 81",
-    description: "The most famous sky scraper in Vietnam",
-    imageUrl:
-      "https://kinhdoanhdiaoc.net/wp-content/uploads/2017/06/landmark-81-1.jpg",
-    address: "20 W 34th St, New York, NY 1001",
-    location: {
-      lat: 10.7941662,
-      lng: 106.7186276,
-    },
-    creator: "u1",
-  },
-];
+const User = require("../models/user");
 
 const getPlaceById = async (req, res, next) => {
   const placeId = req.params.pid;
@@ -42,7 +14,10 @@ const getPlaceById = async (req, res, next) => {
     console.log(place);
   } catch (error) {
     console.log(error);
-    throw new HttpError(500, "Could not find a place witt place id !");
+    return next(new HttpError(500, "Something wrong, please try again!"));
+  }
+  if (!place) {
+    return next(new HttpError(422, "Could not find a place witt place id !"));
   }
   // res.json(place);
   // or
@@ -78,7 +53,23 @@ const createPlace = async (req, res, next) => {
     console.log(error);
     return next(new HttpError(400, "Bad request"));
   }
+
   const { title, description, location, address, creator } = req.body;
+
+  // STEP 1: find user
+  let user;
+  try {
+    user = await User.findById(creator);
+  } catch (error) {
+    return next(new HttpError(500, "Creating place failed, please try again"));
+  }
+
+  // STEP 2: check user
+  if (!user) {
+    return next(
+      new HttpError(404, "Could not find user by provided id, please try again")
+    );
+  }
 
   const createdPlace = new Place({
     title,
@@ -90,14 +81,19 @@ const createPlace = async (req, res, next) => {
     creator,
   });
 
+  // start transaction
   try {
+    const sess = await mongoose.startSession();
+    await sess.startTransaction();
     await createdPlace.save();
+    user.places.push(createdPlace);
+    await user.save();
+    await sess.commitTransaction();
   } catch (error) {
     console.log(error);
-    return next(new HttpError(500, "Fetching data failed, please try again"));
-    // or
-    // throw new HttpError(500, "Creating place failed, please try again");
+    return next(new HttpError(500, "Creating data failed, please try again"));
   }
+  // end transaction
 
   res.status(201).json(createdPlace);
 };
@@ -146,7 +142,7 @@ const deletePlace = async (req, res, next) => {
 
   try {
     place.deleteOne();
-  }catch (error) {
+  } catch (error) {
     console.log(error);
     return next(new HttpError(500, "Delete request failed, please try again"));
   }
