@@ -28,7 +28,7 @@ app.use((error, req, res, next) => {
 });
 
 const dbUri =
-  "mongodb+srv://root:Nguahoang11@hangung.iioeg.mongodb.net/location_app?retryWrites=true&w=majority";
+  `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@hangung.iioeg.mongodb.net/${process.env.MONGO_DATABASE}?retryWrites=true&w=majority`;
 mongoose
   .connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
