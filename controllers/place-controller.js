@@ -19,30 +19,48 @@ const getPlaceById = async (req, res, next) => {
   if (!place) {
     return next(new HttpError(422, "Could not find a place witt place id !"));
   }
-  // res.json(place);
-  // or
+
   res.json({ place: place.toObject({ getters: true }) });
 };
 
 const getPlaceByUserId = async (req, res, next) => {
   const userId = req.params.uid;
 
-  let places;
+  // Alternative Approach
+  // let places;
+  // try {
+  //   places = await Place.find({ creator: userId });
+  // } catch (error) {
+  //   console.log(error);
+  //   return next(new HttpError(500, "Fetching data failed, please try again"));
+  // }
+
+  // if (!places || places.length === 0) {
+  //   return next(
+  //     new HttpError(404, "Could not find place for provided user Id")
+  //   );
+  // }
+  // res.json({
+  //   places: places.map((place) => place.toObject({ getters: true })),
+  // });
+
+  let userWithPlaces;
   try {
-    console.log({ userId });
-    places = await Place.find({ creator: userId });
+    userWithPlaces = await User.findById(userId).populate('places');
   } catch (error) {
     console.log(error);
     return next(new HttpError(500, "Fetching data failed, please try again"));
   }
-
-  if (!places || places.length === 0) {
+  if (!userWithPlaces || userWithPlaces.places.length === 0) {
     return next(
       new HttpError(404, "Could not find place for provided user Id")
     );
   }
+
   res.json({
-    places: places.map((place) => place.toObject({ getters: true })),
+    places: userWithPlaces.places.map((place) =>
+      place.toObject({ getters: true })
+    ),
   });
 };
 
@@ -85,9 +103,9 @@ const createPlace = async (req, res, next) => {
   try {
     const sess = await mongoose.startSession();
     await sess.startTransaction();
-    await createdPlace.save({session: sess});
+    await createdPlace.save({ session: sess });
     user.places.push(createdPlace);
-    await user.save({session: sess});
+    await user.save({ session: sess });
     await sess.commitTransaction();
   } catch (error) {
     console.log(error);
@@ -145,9 +163,9 @@ const deletePlace = async (req, res, next) => {
   try {
     const sess = await mongoose.startSession();
     await sess.startTransaction();
-    await place.remove({session: sess});
+    await place.remove({ session: sess });
     place.creator.places.pull(place);
-    await place.creator.save({session: sess});
+    await place.creator.save({ session: sess });
     await sess.commitTransaction();
   } catch (error) {
     console.log(error);
