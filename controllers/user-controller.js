@@ -55,7 +55,7 @@ const signup = async (req, res, next) => {
     return next(new HttpError(500, "Can not create user, please try again"));
   }
 
-  res.status(201).json({ newUser: newUser.toObject({ getters: true }) });
+  res.status(201).json({ user: newUser.toObject({ getters: true }) });
 };
 
 const login = async (req, res, next) => {

@@ -46,7 +46,7 @@ const getPlaceByUserId = async (req, res, next) => {
 
   let userWithPlaces;
   try {
-    userWithPlaces = await User.findById(userId).populate('places');
+    userWithPlaces = await User.findById(userId).populate("places");
   } catch (error) {
     console.log(error);
     return next(new HttpError(500, "Fetching data failed, please try again"));
@@ -73,22 +73,6 @@ const createPlace = async (req, res, next) => {
   }
 
   const { title, description, location, address, creator } = req.body;
-
-  // STEP 1: find user
-  let user;
-  try {
-    user = await User.findById(creator);
-  } catch (error) {
-    return next(new HttpError(500, "Creating place failed, please try again"));
-  }
-
-  // STEP 2: check user
-  if (!user) {
-    return next(
-      new HttpError(404, "Could not find user by provided id, please try again")
-    );
-  }
-
   const createdPlace = new Place({
     title,
     description,
@@ -99,16 +83,33 @@ const createPlace = async (req, res, next) => {
     creator,
   });
 
+  // STEP 1: find user
+  let user;
+  try {
+    // user = await User.findById(creator).populate("places");
+    user = await User.findById(creator);
+  } catch (error) {
+    console.log(error);
+    return next(new HttpError(500, "Creating place failed, please try again"));
+  }
+
+  // STEP 2: check if user existing
+  if (!user) {
+    return next(
+      new HttpError(404, "Could not find user by provided id, please try again")
+    );
+  }
+
   // start transaction
   try {
     const sess = await mongoose.startSession();
-    await sess.startTransaction();
+    sess.startTransaction();
     await createdPlace.save({ session: sess });
     user.places.push(createdPlace);
     await user.save({ session: sess });
     await sess.commitTransaction();
   } catch (error) {
-    console.log(error);
+    console.log("TRANSACTION : ", error);
     return next(new HttpError(500, "Creating data failed, please try again"));
   }
   // end transaction
