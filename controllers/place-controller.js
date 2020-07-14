@@ -85,9 +85,9 @@ const createPlace = async (req, res, next) => {
   try {
     const sess = await mongoose.startSession();
     await sess.startTransaction();
-    await createdPlace.save();
+    await createdPlace.save({session: sess});
     user.places.push(createdPlace);
-    await user.save();
+    await user.save({session: sess});
     await sess.commitTransaction();
   } catch (error) {
     console.log(error);
@@ -133,15 +133,22 @@ const deletePlace = async (req, res, next) => {
   let place;
   // STEP 1: find a place by id
   try {
-    place = await Place.findById(placeId);
-    console.log(place);
+    place = await Place.findById(placeId).populate("creator");
   } catch (error) {
     console.log(error);
-    return next(new HttpError(500, "Fetching failed, please try again"));
+    return next(new HttpError(500, "Something wrong, please try again"));
+  }
+  if (!place) {
+    return next(new HttpError(404, "Could not fetch place for provided id"));
   }
 
   try {
-    place.deleteOne();
+    const sess = await mongoose.startSession();
+    await sess.startTransaction();
+    await place.remove({session: sess});
+    place.creator.places.pull(place);
+    await place.creator.save({session: sess});
+    await sess.commitTransaction();
   } catch (error) {
     console.log(error);
     return next(new HttpError(500, "Delete request failed, please try again"));
