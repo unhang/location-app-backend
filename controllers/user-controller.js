@@ -7,11 +7,9 @@ const User = require("../models/user");
 const getUsers = async (req, res, next) => {
   let users;
   try {
-    users = await User.find({}, '-password');
+    users = await User.find({}, "-password");
   } catch (error) {
-    return next(
-      new HttpError(500, "Fetching users failed, please try again")
-    );
+    return next(new HttpError(500, "Fetching users failed, please try again"));
   }
   res.json({ users: users.map((user) => user.toObject({ getters: true })) });
 };
@@ -46,7 +44,7 @@ const signup = async (req, res, next) => {
     password,
     image:
       "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/user-male-icon.png",
-    places:[],
+    places: [],
   });
 
   try {
@@ -60,7 +58,6 @@ const signup = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   const { email, password } = req.body;
-
   let user;
   try {
     user = await User.findOne({ email });
@@ -69,11 +66,9 @@ const login = async (req, res, next) => {
   }
 
   if (!user || user.password !== password) {
-    return next(
-      new HttpError(404, "Invalid credentials, please try again")
-    );
+    return next(new HttpError(404, "Invalid credentials, please try again"));
   }
-  res.status(200).json({ message: "Login" });
+  res.status(200).json({ user: user.toObject({ getters: true }) });
 };
 
 exports.login = login;

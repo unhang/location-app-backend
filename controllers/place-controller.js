@@ -11,7 +11,6 @@ const getPlaceById = async (req, res, next) => {
   let place;
   try {
     place = await Place.findById(placeId);
-    console.log(place);
   } catch (error) {
     console.log(error);
     return next(new HttpError(500, "Something wrong, please try again!"));
@@ -109,7 +108,6 @@ const createPlace = async (req, res, next) => {
     await user.save({ session: sess });
     await sess.commitTransaction();
   } catch (error) {
-    console.log("TRANSACTION : ", error);
     return next(new HttpError(500, "Creating data failed, please try again"));
   }
   // end transaction
@@ -126,7 +124,6 @@ const updatePlace = async (req, res, next) => {
   // STEP 1: find a place by id
   try {
     place = await Place.findById(placeId);
-    console.log(place);
   } catch (error) {
     console.log(error);
     return next(new HttpError(500, "Fetching failed, please try again"));
